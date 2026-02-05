@@ -1,33 +1,41 @@
 # OPOCH CasADi Verification Layer
 
-**Precision Refinement for Safety-Critical Optimization**
+**KKT Verification and Precision Refinement for CasADi/IPOPT**
 
-IPOPT (the industry-standard NLP solver) returns `Solve_Succeeded` even when KKT residuals are as high as 10⁻⁵. For safety-critical systems (rockets, robots, medical devices), this is unacceptable. OPOCH drives solutions to machine precision (10⁻¹³), providing mathematical certification that constraints are truly satisfied.
+IPOPT uses scaled residuals internally, which can mask constraint violations in the original problem space. OPOCH computes KKT residuals in unscaled space and refines solutions when needed.
 
 ```
-IPOPT alone:     r_max = 10⁻⁵   →  "Approximately optimal"
-IPOPT + OPOCH:   r_max = 10⁻¹³  →  "Machine precision certified"
+IPOPT alone:     r_max = 10⁻⁵   (scaled)
+IPOPT + OPOCH:   r_max = 10⁻¹³  (unscaled, verified)
 ```
 
 ## Method
 
-1. **Verify**: Compute KKT residuals in unscaled space after IPOPT returns
-2. **Repair**: If r_max > ε, re-run with strict tolerances (10⁻¹², no scaling, warm start)
+OPOCH performs post-hoc KKT verification on IPOPT solutions:
 
-We do not modify IPOPT's algorithm. We verify its output and repair when needed.
+1. **Compute** the maximum KKT residual in unscaled space:
+   ```
+   r_max = max(r_primal, r_dual, r_complementarity)
+   ```
 
-**[Mathematical formulation →](MATH.md)**
+2. **Certify** if r_max ≤ ε (default ε = 10⁻⁶)
+
+3. **Refine** if verification fails: re-solve with `tol=10⁻¹²`, `nlp_scaling_method=none`, warm start from previous solution
+
+The verification correctly handles IPOPT's multiplier sign convention for two-sided bounds.
+
+**[Complete mathematical formulation →](MATH.md)**
 
 ## Results
 
-**27/27 benchmark problems certified** across aerospace, pharma, and engineering domains.
+27 benchmark problems tested. IPOPT returned `Solve_Succeeded` on all 27.
 
-| Metric | IPOPT Default | OPOCH Refinement |
-|--------|---------------|------------------|
-| Certified (r_max ≤ 10⁻⁶) | 22/27 | **27/27** |
-| Worst case | 2.58×10⁻⁴ | 2.57×10⁻¹⁰ |
+| Metric | IPOPT Default | After OPOCH Refinement |
+|--------|---------------|------------------------|
+| Certified (r_max ≤ 10⁻⁶) | 22/27 | 27/27 |
+| Worst r_max | 2.58×10⁻⁴ | 2.57×10⁻¹⁰ |
 
-IPOPT returned "Success" on all 27, but 5 had residuals above certification threshold. OPOCH fixed all of them.
+5 problems had r_max > 10⁻⁶ despite `Solve_Succeeded`. All were brought to certification after refinement.
 
 **[Full benchmark results →](RESULTS.md)**
 
@@ -41,25 +49,24 @@ python precision_comparison.py
 
 ## Benchmarks
 
-| Source | Problems | Description |
-|--------|----------|-------------|
+| Source | Count | Description |
+|--------|-------|-------------|
 | [CasADi Official](https://github.com/casadi/casadi/tree/main/docs/examples/python) | 6 | rocket, race_car, chain_qp, etc. |
-| [Hock-Schittkowski](https://en.wikipedia.org/wiki/Hock-Schittkowski_collection) | 10 | Classic optimization benchmarks (1981) |
-| [NIST StRD](https://www.itl.nist.gov/div898/strd/nls/nls_main.shtml) | 6 | Statistical reference datasets |
-| Industrial | 5 | Rocket landing, robotics, parameter estimation |
+| [Hock-Schittkowski](https://en.wikipedia.org/wiki/Hock-Schittkowski_collection) | 10 | Classic NLP test problems (1981) |
+| [NIST StRD](https://www.itl.nist.gov/div898/strd/nls/nls_main.shtml) | 6 | Nonlinear regression reference datasets |
+| Custom | 5 | Optimal control, parameter estimation |
 
 ## Repository Structure
 
 ```
 opoch-casadi/
-├── README.md                      # This file
+├── README.md
 ├── MATH.md                        # Mathematical formulation
 ├── RESULTS.md                     # Full benchmark results
-│
 └── src/opoch_casadi/
-    ├── kkt_verifier.py            # Core verification logic
+    ├── kkt_verifier.py            # KKT verification with multiplier decomposition
     ├── nlp_contract.py            # NLP data structures
-    ├── precision_comparison.py    # Run this to reproduce results
+    ├── precision_comparison.py    # Reproduce benchmark results
     ├── casadi_official_examples.py
     ├── hock_schittkowski.py
     ├── suite_a_industrial.py

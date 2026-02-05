@@ -29,18 +29,56 @@ python precision_comparison.py   # See the key comparison table
 
 ## Results: 27/27 Problems Certified
 
-### Precision Improvement (IPOPT Default → OPOCH Refinement)
+### Precision Improvement: All 27 Problems
 
-| Problem | Vars | IPOPT r_max | OPOCH r_max | Improvement |
-|---------|------|-------------|-------------|-------------|
-| rocket_landing | 60 | 9.94e-05 | 9.69e-13 | **102,592,566x** |
-| gauss1 | 8 | 2.58e-04 | 2.57e-10 | **1,000,000x** |
-| hs100 | 7 | 1.27e-06 | 8.81e-13 | **1,441,543x** |
-| hs065 | 3 | 4.50e-07 | 1.21e-13 | **3,730,000x** |
-| misra1a | 2 | 4.65e-05 | 2.15e-09 | **21,643x** |
-| chwirut2 | 3 | 1.62e-05 | 3.63e-10 | **44,572x** |
-| race_car | 303 | 6.83e-09 | 8.64e-13 | **7,907x** |
-| rocket | 50 | 3.71e-09 | 4.05e-13 | **9,164x** |
+**Aerospace & Robotics** (Optimal Control)
+
+| Problem | Application | Vars | IPOPT r_max | OPOCH r_max | Improvement |
+|---------|-------------|------|-------------|-------------|-------------|
+| rocket_landing | SpaceX-style soft landing | 60 | 9.94e-05 | 9.69e-13 | **103M x** |
+| rocket | Fuel-optimal trajectory | 50 | 3.71e-09 | 4.05e-13 | 9,164x |
+| race_car | F1-style optimal lap time | 303 | 6.83e-09 | 8.64e-13 | 7,907x |
+| van_der_pol_ocp | Oscillator control (robotics) | 60 | 2.68e-09 | 6.18e-13 | 4,336x |
+| vdp_multiple_shooting | Multi-stage trajectory | 62 | 9.02e-09 | 9.52e-13 | 9,473x |
+| robot_arm_2d | Inverse kinematics | 2 | 1.46e-09 | 7.31e-14 | 19,992x |
+
+**Pharma & Chemistry** (NIST Curve Fitting)
+
+| Problem | Application | Vars | IPOPT r_max | OPOCH r_max | Improvement |
+|---------|-------------|------|-------------|-------------|-------------|
+| gauss1 | Spectroscopy peak fitting | 8 | 2.58e-04 | 2.57e-10 | **1M x** |
+| misra1a | Drug metabolism decay | 2 | 4.65e-05 | 2.15e-09 | 21,643x |
+| chwirut2 | Chemical reaction rates | 3 | 1.62e-05 | 3.63e-10 | 44,572x |
+| lanczos1 | Multi-exponential decay | 6 | 7.30e-09 | 6.26e-13 | 11,663x |
+| box3d | Reaction kinetics | 3 | 2.39e-09 | 1.19e-13 | 20,121x |
+| parameter_estimation | System identification | 2 | 2.51e-09 | 1.25e-13 | 20,002x |
+
+**Engineering Design** (Hock-Schittkowski Benchmarks)
+
+| Problem | Application | Vars | IPOPT r_max | OPOCH r_max | Improvement |
+|---------|-------------|------|-------------|-------------|-------------|
+| hs100 | Multi-constraint design | 7 | 1.27e-06 | 8.81e-13 | **1.4M x** |
+| hs065 | Chemical reactor design | 3 | 4.50e-07 | 1.21e-13 | 3,730,000x |
+| hs071 | Process optimization | 4 | 2.46e-07 | 8.85e-13 | 277,591x |
+| hs038 | Structural optimization | 4 | 1.98e-08 | 4.69e-14 | 422,808x |
+| hs044 | Resource allocation | 4 | 1.18e-07 | 9.86e-13 | 119,712x |
+| hs076 | Constrained design | 4 | 4.45e-08 | 9.27e-13 | 47,940x |
+| hs035 | Linear constraints | 3 | 1.85e-08 | 4.35e-13 | 42,600x |
+| chain_qp | Chain of masses (physics) | 80 | 3.72e-08 | 9.87e-13 | 37,661x |
+| quadratic_constrained | Convex QP | 2 | 1.75e-08 | 8.75e-13 | 19,978x |
+
+**Classic Test Functions** (Solver Validation)
+
+| Problem | Application | Vars | IPOPT r_max | OPOCH r_max | Improvement |
+|---------|-------------|------|-------------|-------------|-------------|
+| rosenbrock_10d | 10-D banana function | 10 | 3.61e-09 | 8.05e-14 | 44,787x |
+| rosenbrock_5d | 5-D banana function | 5 | 3.48e-09 | 3.01e-14 | 115,931x |
+| rosenbrock | 3-D constrained | 3 | 9.63e-33 | 9.63e-33 | 1x |
+| rosenbrock_2d | Classic 2-D | 2 | 9.82e-10 | 3.94e-14 | 24,941x |
+| rosenbrock_nist | NIST variant | 2 | 9.82e-10 | 3.94e-14 | 24,941x |
+| simple_nlp | Basic NLP | 2 | 0.00e+00 | 0.00e+00 | - |
+
+> **Sources**: NIST problems from [NIST Statistical Reference Datasets](https://www.itl.nist.gov/div898/strd/nls/nls_main.shtml). HS problems from [Hock-Schittkowski collection](https://en.wikipedia.org/wiki/Hock%E2%80%93Schittkowski_collection) (1981).
 
 **Run `python precision_comparison.py` to see all 27 problems.**
 
@@ -132,10 +170,9 @@ OPOCH always verifies in **unscaled space** - the true mathematical measure.
 ## File Structure
 
 ```
-casadi/
-├── README.md                      # This file
-├── MATH.md                        # Complete mathematical documentation
-├── kkt_verifier.py                # Core KKT verifier with correct two-sided decomposition
+opoch-casadi/
+├── README.md                          # This file
+├── MATH.md                            # Complete mathematical documentation
 │
 └── src/opoch_casadi/
     ├── __init__.py
@@ -144,9 +181,9 @@ casadi/
     ├── nlp_contract.py                # NLP data structures
     │
     ├── casadi_official_examples.py    # 6 official examples from CasADi GitHub
-    ├── hock_schittkowski.py           # Classic HS benchmark problems
-    ├── suite_a_industrial.py          # Optimal control, robotics problems
-    ├── suite_b_regression.py          # NIST-style regression problems
+    ├── hock_schittkowski.py           # Classic HS benchmark problems (hs065, hs100, etc.)
+    ├── suite_a_industrial.py          # Optimal control, robotics (rocket_landing, race_car)
+    ├── suite_b_regression.py          # NIST-style regression (gauss1, misra1a, chwirut2)
     │
     ├── precision_comparison.py        # KEY: Shows precision improvement table
     ├── run_all.py                     # Master benchmark runner (27 problems)

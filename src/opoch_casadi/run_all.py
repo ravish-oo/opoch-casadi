@@ -13,7 +13,11 @@ from datetime import datetime
 import numpy as np
 import casadi as ca
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
+# Ensure local src package is on the path for standalone use
+ROOT = Path(__file__).parent
+SRC_PATH = ROOT / "src"
+if SRC_PATH.exists():
+    sys.path.insert(0, str(SRC_PATH))
 
 from casadi_official_examples import get_official_casadi_examples
 from hock_schittkowski import get_hock_schittkowski_problems

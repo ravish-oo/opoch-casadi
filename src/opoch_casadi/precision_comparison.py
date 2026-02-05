@@ -18,6 +18,14 @@ import numpy as np
 import casadi as ca
 from dataclasses import dataclass
 from typing import List
+from pathlib import Path
+import sys
+
+# Ensure local src package is on the path for standalone use
+ROOT = Path(__file__).parent
+SRC_PATH = ROOT / "src"
+if SRC_PATH.exists():
+    sys.path.insert(0, str(SRC_PATH))
 
 from hock_schittkowski import get_hock_schittkowski_problems
 from suite_a_industrial import get_industrial_problems

@@ -21,10 +21,6 @@ except ImportError:
     HAS_CASADI = False
     ca = None
 
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
-
 from nlp_contract import CasADiNLP, NLPBounds, create_nlp_from_casadi
 
 

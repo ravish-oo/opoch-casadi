@@ -21,6 +21,7 @@ IPOPT + OPOCH:   r_max = 10^-13  →  "Machine precision"      →  CERTIFIED
 
 ```bash
 pip install casadi numpy
+cd src/opoch_casadi
 python precision_comparison.py   # See the key comparison table
 ```
 
@@ -136,22 +137,23 @@ casadi/
 ├── MATH.md                        # Complete mathematical documentation
 ├── kkt_verifier.py                # Core KKT verifier with correct two-sided decomposition
 │
-├── casadi_official_examples.py    # 6 official examples from CasADi GitHub
-├── hock_schittkowski.py           # Classic HS benchmark problems
-├── suite_a_industrial.py          # Optimal control, robotics problems
-├── suite_b_regression.py          # NIST-style regression problems
-│
-├── run_official_certified.py      # Run official examples with repair loop
-├── run_all.py                     # Master benchmark runner
-│
-├── show_ipopt_failures.py         # Demonstrates IPOPT false positives
-├── verify_proof.py                # Shows mathematical proof verification
-├── what_we_do.py                  # Explains the methodology
-├── cost_comparison.py             # OPOCH vs BARON cost analysis
-│
-└── runs/                          # Output directory
-    └── official_certified/
-        └── results.json
+└── src/opoch_casadi/
+    ├── __init__.py
+    │
+    ├── kkt_verifier.py                # Core: KKT verification with IPOPT sign fix
+    ├── nlp_contract.py                # NLP data structures
+    │
+    ├── casadi_official_examples.py    # 6 official examples from CasADi GitHub
+    ├── hock_schittkowski.py           # Classic HS benchmark problems
+    ├── suite_a_industrial.py          # Optimal control, robotics problems
+    ├── suite_b_regression.py          # NIST-style regression problems
+    │
+    ├── precision_comparison.py        # KEY: Shows precision improvement table
+    ├── run_all.py                     # Master benchmark runner (27 problems)
+    ├── run_official_certified.py      # Run official examples with repair loop
+    ├── show_ipopt_failures.py         # Demonstrates IPOPT false positives
+    ├── verify_proof.py                # Shows mathematical proof verification
+    └── what_we_do.py                  # Explains the methodology
 ```
 
 ---
@@ -164,17 +166,11 @@ casadi/
 pip install casadi numpy
 ```
 
-### Run All
-
-```bash
-python run_all.py
-```
-
 ### Key Comparison Script (Start Here)
 
 ```bash
-# THE KEY SCRIPT: Shows precision improvement for all 27 problems
-python precision_comparison.py
+cd src/opoch_casadi
+python precision_comparison.py   # THE KEY SCRIPT: Shows precision improvement
 ```
 
 This produces a table comparing IPOPT default (r_max ~ 10^-5) vs OPOCH refinement (r_max ~ 10^-13):
@@ -188,23 +184,15 @@ hs100                     1.27e-06     8.81e-13      1,441,543x
 ...
 ```
 
-### Individual Benchmarks
+### Other Scripts
 
 ```bash
-# Full benchmark suite (27 problems, all certified)
-python run_all.py
+cd src/opoch_casadi
 
-# Official CasADi examples (6/6 certified)
-python run_official_certified.py
-
-# Show IPOPT failures that OPOCH catches
-python show_ipopt_failures.py
-
-# Mathematical proof verification
-python verify_proof.py
-
-# What exactly we do mathematically
-python what_we_do.py
+python run_all.py                # Full benchmark suite (27 problems)
+python show_ipopt_failures.py    # Demo: IPOPT lies caught and fixed
+python verify_proof.py           # Mathematical proof verification
+python what_we_do.py             # Explains the methodology
 ```
 
 ---

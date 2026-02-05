@@ -2,12 +2,21 @@
 
 **Precision Refinement for Safety-Critical Optimization**
 
-IPOPT returns `Solve_Succeeded` even when KKT residuals are as high as 10⁻⁵. For safety-critical systems, this is unacceptable. OPOCH drives solutions to machine precision (10⁻¹³), providing mathematical certification.
+IPOPT (the industry-standard NLP solver) returns `Solve_Succeeded` even when KKT residuals are as high as 10⁻⁵. For safety-critical systems (rockets, robots, medical devices), this is unacceptable. OPOCH drives solutions to machine precision (10⁻¹³), providing mathematical certification that constraints are truly satisfied.
 
 ```
 IPOPT alone:     r_max = 10⁻⁵   →  "Approximately optimal"
 IPOPT + OPOCH:   r_max = 10⁻¹³  →  "Machine precision certified"
 ```
+
+## Method
+
+1. **Verify**: Compute KKT residuals in unscaled space after IPOPT returns
+2. **Repair**: If r_max > ε, re-run with strict tolerances (10⁻¹², no scaling, warm start)
+
+We do not modify IPOPT's algorithm. We verify its output and repair when needed.
+
+**[Mathematical formulation →](MATH.md)**
 
 ## Results
 
@@ -21,15 +30,6 @@ IPOPT + OPOCH:   r_max = 10⁻¹³  →  "Machine precision certified"
 IPOPT returned "Success" on all 27, but 5 had residuals above certification threshold. OPOCH fixed all of them.
 
 **[Full benchmark results →](RESULTS.md)**
-
-## Method
-
-1. **Verify**: Compute KKT residuals in unscaled space after IPOPT returns
-2. **Repair**: If r_max > ε, re-run with strict tolerances (10⁻¹², no scaling, warm start)
-
-We do not modify IPOPT's algorithm. We verify its output and repair when needed.
-
-**[Mathematical formulation →](MATH.md)**
 
 ## Quick Start
 
@@ -53,8 +53,8 @@ python precision_comparison.py
 ```
 opoch-casadi/
 ├── README.md                      # This file
-├── RESULTS.md                     # Full benchmark results
 ├── MATH.md                        # Mathematical formulation
+├── RESULTS.md                     # Full benchmark results
 │
 └── src/opoch_casadi/
     ├── kkt_verifier.py            # Core verification logic

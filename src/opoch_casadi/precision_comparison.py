@@ -245,7 +245,7 @@ Precision improvement range: {min(r.improvement for r in results):.0f}x to {max(
     print("CONCLUSION")
     print("=" * 100)
     print("""
-IPOPT returns 'Solve_Succeeded' even when KKT residuals are as high as 10^-4.
+IPOPT returns 'Solve_Succeeded' even when KKT residuals are as high as 10^-5.
 For safety-critical systems (rockets, robots, medical devices), this is unacceptable.
 
 OPOCH refinement drives ALL solutions to machine precision (10^-9 to 10^-13),

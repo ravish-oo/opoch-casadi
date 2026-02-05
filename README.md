@@ -2,306 +2,70 @@
 
 **Precision Refinement for Safety-Critical Optimization**
 
-## The Problem
-
-IPOPT (the industry-standard NLP solver) returns `Solve_Succeeded` even when solutions have KKT residuals as high as **10^-4**. For safety-critical systems (rockets, robots, medical devices), this is unacceptable.
-
-## The Solution
-
-OPOCH refinement drives solutions to **machine precision (10^-13)**, providing mathematical certification that constraints are truly satisfied.
+IPOPT returns `Solve_Succeeded` even when KKT residuals are as high as 10⁻⁵. For safety-critical systems, this is unacceptable. OPOCH drives solutions to machine precision (10⁻¹³), providing mathematical certification.
 
 ```
-IPOPT alone:     r_max = 10^-5   →  "Approximately optimal"  →  UNSAFE
-IPOPT + OPOCH:   r_max = 10^-13  →  "Machine precision"      →  CERTIFIED
+IPOPT alone:     r_max = 10⁻⁵   →  "Approximately optimal"
+IPOPT + OPOCH:   r_max = 10⁻¹³  →  "Machine precision certified"
 ```
 
----
+## Results
+
+**27/27 benchmark problems certified** across aerospace, pharma, and engineering domains.
+
+| Metric | IPOPT Default | OPOCH Refinement |
+|--------|---------------|------------------|
+| Certified (r_max ≤ 10⁻⁶) | 22/27 | **27/27** |
+| Worst case | 2.58×10⁻⁴ | 2.57×10⁻¹⁰ |
+
+IPOPT returned "Success" on all 27, but 5 had residuals above certification threshold. OPOCH fixed all of them.
+
+**[Full benchmark results →](RESULTS.md)**
+
+## Method
+
+1. **Verify**: Compute KKT residuals in unscaled space after IPOPT returns
+2. **Repair**: If r_max > ε, re-run with strict tolerances (10⁻¹², no scaling, warm start)
+
+We do not modify IPOPT's algorithm. We verify its output and repair when needed.
+
+**[Mathematical formulation →](MATH.md)**
 
 ## Quick Start
 
 ```bash
 pip install casadi numpy
 cd src/opoch_casadi
-python precision_comparison.py   # See the key comparison table
+python precision_comparison.py
 ```
 
----
+## Benchmarks
 
-## Results: 27/27 Problems Certified
+| Source | Problems | Description |
+|--------|----------|-------------|
+| [CasADi Official](https://github.com/casadi/casadi/tree/main/docs/examples/python) | 6 | rocket, race_car, chain_qp, etc. |
+| [Hock-Schittkowski](https://en.wikipedia.org/wiki/Hock-Schittkowski_collection) | 10 | Classic optimization benchmarks (1981) |
+| [NIST StRD](https://www.itl.nist.gov/div898/strd/nls/nls_main.shtml) | 6 | Statistical reference datasets |
+| Industrial | 5 | Rocket landing, robotics, parameter estimation |
 
-### Precision Improvement: All 27 Problems
-
-**Aerospace & Robotics** (Optimal Control)
-
-| Problem | Application | Vars | IPOPT r_max | OPOCH r_max | Improvement |
-|---------|-------------|------|-------------|-------------|-------------|
-| rocket_landing | SpaceX-style soft landing | 60 | 9.94e-05 | 9.69e-13 | **103M x** |
-| rocket | Fuel-optimal trajectory | 50 | 3.71e-09 | 4.05e-13 | 9,164x |
-| race_car | F1-style optimal lap time | 303 | 6.83e-09 | 8.64e-13 | 7,907x |
-| van_der_pol_ocp | Oscillator control (robotics) | 60 | 2.68e-09 | 6.18e-13 | 4,336x |
-| vdp_multiple_shooting | Multi-stage trajectory | 62 | 9.02e-09 | 9.52e-13 | 9,473x |
-| robot_arm_2d | Inverse kinematics | 2 | 1.46e-09 | 7.31e-14 | 19,992x |
-
-**Pharma & Chemistry** (NIST Curve Fitting)
-
-| Problem | Application | Vars | IPOPT r_max | OPOCH r_max | Improvement |
-|---------|-------------|------|-------------|-------------|-------------|
-| gauss1 | Spectroscopy peak fitting | 8 | 2.58e-04 | 2.57e-10 | **1M x** |
-| misra1a | Drug metabolism decay | 2 | 4.65e-05 | 2.15e-09 | 21,643x |
-| chwirut2 | Chemical reaction rates | 3 | 1.62e-05 | 3.63e-10 | 44,572x |
-| lanczos1 | Multi-exponential decay | 6 | 7.30e-09 | 6.26e-13 | 11,663x |
-| box3d | Reaction kinetics | 3 | 2.39e-09 | 1.19e-13 | 20,121x |
-| parameter_estimation | System identification | 2 | 2.51e-09 | 1.25e-13 | 20,002x |
-
-**Engineering Design** (Hock-Schittkowski Benchmarks)
-
-| Problem | Application | Vars | IPOPT r_max | OPOCH r_max | Improvement |
-|---------|-------------|------|-------------|-------------|-------------|
-| hs100 | Multi-constraint design | 7 | 1.27e-06 | 8.81e-13 | **1.4M x** |
-| hs065 | Chemical reactor design | 3 | 4.50e-07 | 1.21e-13 | 3,730,000x |
-| hs071 | Process optimization | 4 | 2.46e-07 | 8.85e-13 | 277,591x |
-| hs038 | Structural optimization | 4 | 1.98e-08 | 4.69e-14 | 422,808x |
-| hs044 | Resource allocation | 4 | 1.18e-07 | 9.86e-13 | 119,712x |
-| hs076 | Constrained design | 4 | 4.45e-08 | 9.27e-13 | 47,940x |
-| hs035 | Linear constraints | 3 | 1.85e-08 | 4.35e-13 | 42,600x |
-| chain_qp | Chain of masses (physics) | 80 | 3.72e-08 | 9.87e-13 | 37,661x |
-| quadratic_constrained | Convex QP | 2 | 1.75e-08 | 8.75e-13 | 19,978x |
-
-**Classic Test Functions** (Solver Validation)
-
-| Problem | Application | Vars | IPOPT r_max | OPOCH r_max | Improvement |
-|---------|-------------|------|-------------|-------------|-------------|
-| rosenbrock_10d | 10-D banana function | 10 | 3.61e-09 | 8.05e-14 | 44,787x |
-| rosenbrock_5d | 5-D banana function | 5 | 3.48e-09 | 3.01e-14 | 115,931x |
-| rosenbrock | 3-D constrained | 3 | 9.63e-33 | 9.63e-33 | 1x |
-| rosenbrock_2d | Classic 2-D | 2 | 9.82e-10 | 3.94e-14 | 24,941x |
-| rosenbrock_nist | NIST variant | 2 | 9.82e-10 | 3.94e-14 | 24,941x |
-| simple_nlp | Basic NLP | 2 | 0.00e+00 | 0.00e+00 | - |
-
-> **Sources**: NIST problems from [NIST Statistical Reference Datasets](https://www.itl.nist.gov/div898/strd/nls/nls_main.shtml). HS problems from [Hock-Schittkowski collection](https://en.wikipedia.org/wiki/Hock%E2%80%93Schittkowski_collection) (1981).
-
-**Run `python precision_comparison.py` to see all 27 problems.**
-
-### Key Finding
-
-- **IPOPT Default**: 22/27 certified (5 problems said "Success" but r_max > 1e-6)
-- **OPOCH Refinement**: **27/27 certified** (all to machine precision)
-
----
-
-## The Mathematics
-
-### What is r_max?
-
-`r_max` is the maximum KKT residual - the single number that certifies optimality:
-
-```
-r_max = max(r_primal, r_dual, r_complementarity)
-```
-
-**r_primal** (Primal Feasibility):
-```
-r_primal = max |constraint violations|
-```
-Checks: Are constraints g_L <= g(x*) <= g_U satisfied?
-
-**r_dual** (Stationarity):
-```
-r_dual = ||grad_f(x*) + J_g(x*)^T * lambda_g + lambda_x||_inf
-```
-Checks: Is the gradient of the Lagrangian zero at x*?
-
-**r_complementarity** (Complementary Slackness):
-```
-r_compl = max |mu * slack|
-```
-Checks: Are multipliers zero when constraints are inactive?
-
-### The KKT Theorem
-
-If r_max <= epsilon, then x* is a **certified local optimum** by the Karush-Kuhn-Tucker conditions. This is not trust - this is mathematical proof.
-
-### The IPOPT Sign Convention (Critical Fix)
-
-IPOPT encodes bound multipliers with signs:
-- **Negative multiplier** -> active LOWER bound
-- **Positive multiplier** -> active UPPER bound
-
-The correct decomposition:
-```python
-mu_lower = max(0, -lambda)  # Lower bound multiplier
-mu_upper = max(0, +lambda)  # Upper bound multiplier
-```
-
-This fix is what makes the verifier work correctly.
-
----
-
-## What OPOCH Does
-
-**We do NOT change IPOPT's algorithm.** We:
-
-1. **VERIFY**: Compute KKT residuals in unscaled space after IPOPT returns
-2. **REPAIR**: If verification fails, re-run IPOPT with stricter settings
-
-### The Repair Loop
-
-```
-Round 0: Default IPOPT (tol=1e-8, with scaling)
-         -> May pass or fail verification
-
-Round 1: Strict IPOPT (tol=1e-10, no scaling, warmstart)
-         -> Drives solution to true KKT satisfaction
-
-Round 2: Extra strict (if needed)
-         -> Additional numerical stabilization
-```
-
-### Why IPOPT Says "SUCCESS" But Is Wrong
-
-IPOPT uses **scaled** internal residuals. This can hide true violations:
-- IPOPT's scaled r_max = 1e-9 (passes internal check)
-- True unscaled r_max = 1e-5 (fails KKT verification)
-
-OPOCH always verifies in **unscaled space** - the true mathematical measure.
-
----
-
-## File Structure
+## Repository Structure
 
 ```
 opoch-casadi/
-├── README.md                          # This file
-├── MATH.md                            # Complete mathematical documentation
+├── README.md                      # This file
+├── RESULTS.md                     # Full benchmark results
+├── MATH.md                        # Mathematical formulation
 │
 └── src/opoch_casadi/
-    ├── __init__.py
-    │
-    ├── kkt_verifier.py                # Core: KKT verification with IPOPT sign fix
-    ├── nlp_contract.py                # NLP data structures
-    │
-    ├── casadi_official_examples.py    # 6 official examples from CasADi GitHub
-    ├── hock_schittkowski.py           # Classic HS benchmark problems (hs065, hs100, etc.)
-    ├── suite_a_industrial.py          # Optimal control, robotics (rocket_landing, race_car)
-    ├── suite_b_regression.py          # NIST-style regression (gauss1, misra1a, chwirut2)
-    │
-    ├── precision_comparison.py        # KEY: Shows precision improvement table
-    ├── run_all.py                     # Master benchmark runner (27 problems)
-    ├── run_official_certified.py      # Run official examples with repair loop
-    ├── show_ipopt_failures.py         # Demonstrates IPOPT false positives
-    ├── verify_proof.py                # Shows mathematical proof verification
-    └── what_we_do.py                  # Explains the methodology
+    ├── kkt_verifier.py            # Core verification logic
+    ├── nlp_contract.py            # NLP data structures
+    ├── precision_comparison.py    # Run this to reproduce results
+    ├── casadi_official_examples.py
+    ├── hock_schittkowski.py
+    ├── suite_a_industrial.py
+    └── suite_b_regression.py
 ```
 
----
+## License
 
-## Running the Benchmarks
-
-### Prerequisites
-
-```bash
-pip install casadi numpy
-```
-
-### Key Comparison Script (Start Here)
-
-```bash
-cd src/opoch_casadi
-python precision_comparison.py   # THE KEY SCRIPT: Shows precision improvement
-```
-
-This produces a table comparing IPOPT default (r_max ~ 10^-5) vs OPOCH refinement (r_max ~ 10^-13):
-
-```
-Problem                 IPOPT r_max  OPOCH r_max  Improvement
----------------------------------------------------------------
-rocket_landing            9.94e-05     9.69e-13    102,592,566x
-gauss1                    2.58e-04     2.57e-10      1,000,000x
-hs100                     1.27e-06     8.81e-13      1,441,543x
-...
-```
-
-### Other Scripts
-
-```bash
-cd src/opoch_casadi
-
-python run_all.py                # Full benchmark suite (27 problems)
-python show_ipopt_failures.py    # Demo: IPOPT lies caught and fixed
-python verify_proof.py           # Mathematical proof verification
-python what_we_do.py             # Explains the methodology
-```
-
----
-
-## Industry Impact
-
-### OPOCH vs Global Solvers (BARON, COUENNE)
-
-| Metric | OPOCH | BARON/Global |
-|--------|-------|--------------|
-| Overhead | ~8% | 1,000x - 1,000,000x |
-| Scalability | 1000+ vars OK | ~20 vars practical |
-| Real-time capable | YES | NO |
-
-### Concrete Examples
-
-| Problem | OPOCH | BARON (estimated) | Slowdown |
-|---------|-------|-------------------|----------|
-| hs100 (7 vars) | 4ms | minutes-hours | 2,500x - 900,000x |
-| rocket_landing (60 vars) | 6ms | hours-days | 600,000x - 14,000,000x |
-| race_car (303 vars) | 60ms | days-weeks | 1,400,000x - 10,000,000x |
-
-### Industry Cost Savings
-
-- **Aerospace**: $3M+/year in engineer productivity (100+ trajectory iterations/day vs 1-2)
-- **Automotive**: Enables real-time certified MPC control (impossible with BARON)
-- **Chemical**: 1000x more optimization runs for faster plant optimization
-- **Finance**: Never miss optimization windows before market close
-
----
-
-## The Tradeoff
-
-| | OPOCH | BARON |
-|---|-------|-------|
-| **Certifies** | Local optimum (KKT) | Global optimum (entire domain) |
-| **Time** | Milliseconds | Minutes to days |
-| **Use when** | Real-time, large problems, good initial guess | Small problems (<20 vars), must prove global |
-
-**For most industrial applications:**
-- Good initial guess means local = global
-- Multi-start OPOCH still 1000x faster than BARON
-- KKT certificate is sufficient for audits/safety
-- Real-time applications CANNOT use BARON
-
----
-
-## Verification
-
-Anyone can verify OPOCH results:
-
-1. Take x*, lambda from the proof bundle
-2. Compute gradients: grad_f(x*), J_g(x*), g(x*)
-3. Compute residuals:
-   - r_primal = max constraint violation
-   - r_dual = ||grad_f + J_g^T * lambda||
-   - r_compl = max(mu * slack)
-4. Check: r_max <= epsilon?
-5. Verify SHA-256 hash matches
-
-**If all checks pass, the solution is MATHEMATICALLY OPTIMAL.**
-
-This is not trust. This is proof.
-
----
-
-## Citation
-
-```
-OPOCH CasADi Verification Layer
-https://github.com/opoch-optimizer/opoch-optimizer
-
-Key insight: IPOPT uses scaled internal residuals that can hide true KKT violations.
-OPOCH verifies in unscaled space and repairs with stricter tolerances.
-```
+MIT

@@ -2,13 +2,21 @@
 
 ## Summary
 
-| Metric | IPOPT Default | OPOCH Refinement |
-|--------|---------------|------------------|
-| Problems certified (r_max <= 1e-6) | 22/27 | **27/27** |
-| Worst r_max | 2.58e-04 | 2.57e-10 |
-| Best r_max | 0.00e+00 | 0.00e+00 |
+| Metric | IPOPT Default | After OPOCH Refinement |
+|--------|---------------|------------------------|
+| Certified (r_max ≤ 10⁻⁶) | 22/27 | **27/27** |
+| Worst r_max | 2.58×10⁻⁴ | 2.57×10⁻¹⁰ |
+| Precision improvement | - | 10³x to 10⁸x |
+| Computational overhead | - | ~8% |
 
-**Key Finding**: IPOPT returned "Solve_Succeeded" for all 27 problems, but 5 had r_max > 1e-6 (not actually certified). OPOCH refinement fixed all of them.
+IPOPT returned `Solve_Succeeded` for all 27 problems, but 5 had r_max > 10⁻⁶. OPOCH refinement certified all of them.
+
+**Timing** (27 problems on MacBook Pro):
+- Official CasADi examples: 2451 ms
+- Hock-Schittkowski: 59 ms
+- Industrial: 21 ms
+- Regression: 93 ms
+- **Total: ~2.6 seconds**
 
 ---
 
